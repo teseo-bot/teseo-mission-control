@@ -1,0 +1,57 @@
+name: Deploy Mission Control to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: teseobot-487515
+  REGION: us-central1
+  SERVICE_NAME: crm-mission-control
+  GAR_LOCATION: us-central1-docker.pkg.dev
+  REPOSITORY: crm-agentico
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: |-
+          gcloud auth configure-docker ${{ env.GAR_LOCATION }}
+
+      - name: Build Docker Image
+        run: |-
+          docker build -t ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+          --build-arg NEXT_PUBLIC_SUPABASE_URL="https://inject-me.supabase.co" \
+          --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="inject-me-anon-key" -f ./Dockerfile .
+
+      - name: Push Image to Artifact Registry
+        run: |-
+          docker push ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          env_vars: |
+            NODE_ENV=production
+          secrets: |
+            MISSION_CONTROL_SUPABASE_URL=MISSION_CONTROL_SUPABASE_URL:latest
+            MISSION_CONTROL_SUPABASE_ANON_KEY=MISSION_CONTROL_SUPABASE_ANON_KEY:latest
