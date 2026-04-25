@@ -11,5 +11,17 @@ steps:
   - '.'
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/teseobot-487515/teseo-mission-control']
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+  - 'run'
+  - 'deploy'
+  - 'teseo-mission-control'
+  - '--image'
+  - 'gcr.io/teseobot-487515/teseo-mission-control'
+  - '--region'
+  - 'us-central1'
 images:
 - 'gcr.io/teseobot-487515/teseo-mission-control'
+options:
+  logging: CLOUD_LOGGING_ONLY
