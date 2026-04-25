@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import { ArrowLeftIcon, CopyIcon } from "lucide-react";
+import { BrandingTab } from "./components/BrandingTab";
+import { PromptsTab } from "./components/PromptsTab";
 
 interface Tenant {
   id: string;
@@ -144,175 +145,130 @@ export default function TenantDetailPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{tenant.name}</h1>
-          <p className="text-muted-foreground text-sm">ID: {tenant.id}</p>
+          <p className="text-muted-foreground text-sm flex items-center gap-2">
+            ID: {tenant.id}
+            <button onClick={() => copyToClipboard(tenant.id)} className="hover:text-foreground">
+              <CopyIcon className="size-3" />
+            </button>
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Identity & Core Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Identity & Routing</CardTitle>
-            <CardDescription>
-              Core tenant state and orchestration webhooks.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={tenant.status} 
-                onValueChange={(val) => setTenant({ ...tenant, status: val as any })}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="onboarding">Onboarding</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="suspended">Suspended (Kill-Switch)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <Tabs defaultValue="core" className="w-full">
+        <TabsList className="mb-6 grid w-full grid-cols-4">
+          <TabsTrigger value="core">Operación</TabsTrigger>
+          <TabsTrigger value="branding">Branding & UI</TabsTrigger>
+          <TabsTrigger value="prompts">Prompts & IA</TabsTrigger>
+          <TabsTrigger value="access">Accesos & Roles</TabsTrigger>
+        </TabsList>
 
-            <div className="space-y-2">
-              <Label htmlFor="orchestrator_url">Orchestrator Internal URL (Cloud Run)</Label>
-              <Input 
-                id="orchestrator_url" 
-                placeholder="https://cloudrun-url..." 
-                value={tenant.orchestrator_url || ""}
-                onChange={(e) => setTenant({ ...tenant, orchestrator_url: e.target.value })}
-              />
-            </div>
+        <TabsContent value="core" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Identity & Core Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Identidad & Routing</CardTitle>
+                <CardDescription>
+                  Estado base del tenant y webhooks de orquestación.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Estado</Label>
+                  <Select 
+                    value={tenant.status} 
+                    onValueChange={(val) => setTenant({ ...tenant, status: val as any })}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="onboarding">Onboarding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="orchestrator_url">Orchestrator URL (LangGraph Webhook)</Label>
+                  <Input 
+                    id="orchestrator_url" 
+                    value={tenant.orchestrator_url || ""} 
+                    onChange={(e) => setTenant({ ...tenant, orchestrator_url: e.target.value })}
+                    placeholder="https://api.teseo.lat/tenant-hook"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="api_key_vault_id">Vault Key ID</Label>
+                  <Input 
+                    id="api_key_vault_id" 
+                    value={tenant.api_key_vault_id || ""} 
+                    onChange={(e) => setTenant({ ...tenant, api_key_vault_id: e.target.value })}
+                    placeholder="vault-xyz"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="api_key_vault_id">API Key Vault ID (Secret Manager)</Label>
-              <Input 
-                id="api_key_vault_id" 
-                placeholder="e.g. projects/.../secrets/..." 
-                value={tenant.api_key_vault_id || ""}
-                onChange={(e) => setTenant({ ...tenant, api_key_vault_id: e.target.value })}
-              />
-            </div>
-          </CardContent>
-        </Card>
+            {/* AI Core Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Engine Config</CardTitle>
+                <CardDescription>
+                  LLM Tiers y feature flags base.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="llm_tier">LLM Tier</Label>
+                  <Select 
+                    value={config.llm_tier || "gemini-flash"} 
+                    onValueChange={(val) => setConfig({ ...config, llm_tier: val })}
+                  >
+                    <SelectTrigger id="llm_tier">
+                      <SelectValue placeholder="Select LLM Tier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-flash">Gemini Flash (Default)</SelectItem>
+                      <SelectItem value="claude-sonnet">Claude 3.5 Sonnet</SelectItem>
+                      <SelectItem value="claude-opus">Claude 3 Opus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Webhook Endpoints */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>External Webhook Endpoints (API Gateway)</CardTitle>
-            <CardDescription>
-              Static public endpoints to configure in Meta, Telegram or external providers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>WhatsApp Webhook URL</Label>
-              <div className="flex gap-2">
-                <Input 
-                  readOnly 
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/tenant/${tenant.id}/whatsapp` : ''} 
-                  className="bg-muted font-mono text-sm"
-                />
-                <Button 
-                  variant="secondary" 
-                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/tenant/${tenant.id}/whatsapp` : '')}
-                >
-                  <CopyIcon className="size-4" />
-                </Button>
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleSave} disabled={saving} size="lg">
+              {saving ? "Guardando..." : "Guardar Cambios de Operación"}
+            </Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="branding" className="mt-0">
+          <BrandingTab tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="prompts" className="mt-0">
+          <PromptsTab tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="access" className="mt-0">
+           <Card>
+            <CardHeader>
+              <CardTitle>Accesos y Roles</CardTitle>
+              <CardDescription>Gestión de usuarios del Tenant (Migrando...)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-10 border-2 border-dashed rounded-lg text-center text-muted-foreground">
+                Modulo RBAC en construcción
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="space-y-2">
-              <Label>Telegram Webhook URL</Label>
-              <div className="flex gap-2">
-                <Input 
-                  readOnly 
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/tenant/${tenant.id}/telegram` : ''} 
-                  className="bg-muted font-mono text-sm"
-                />
-                <Button 
-                  variant="secondary" 
-                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/tenant/${tenant.id}/telegram` : '')}
-                >
-                  <CopyIcon className="size-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Behavior & Prompting */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>AI Behavior Config</CardTitle>
-            <CardDescription>
-              Remote dynamic prompting and LLM tier assignment.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 flex-1">
-            <div className="space-y-2">
-              <Label htmlFor="llm_tier">LLM Tier</Label>
-              <Select 
-                value={config.llm_tier} 
-                onValueChange={(val) => setConfig({ ...config, llm_tier: val || "gemini-3.1-pro" })}
-              >
-                <SelectTrigger id="llm_tier">
-                  <SelectValue placeholder="Select model tier" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini-3.1-pro">Gemini 3.1 Pro</SelectItem>
-                  <SelectItem value="gemini-3.1-flash">Gemini 3.1 Flash</SelectItem>
-                  <SelectItem value="claude-3-7-sonnet">Claude 3.7 Sonnet</SelectItem>
-                  <SelectItem value="claude-3-haiku">Claude 3.5 Haiku</SelectItem>
-                  <SelectItem value="llama-3-8b">Llama 3 8B (Edge/Local)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 h-[300px] flex flex-col">
-              <Label>Semantic Prompts</Label>
-              <Tabs defaultValue="sdr" className="flex-1 flex flex-col">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="sdr">SDR</TabsTrigger>
-                  <TabsTrigger value="gatekeeper">Gatekeeper</TabsTrigger>
-                  <TabsTrigger value="rag_l1">RAG L1</TabsTrigger>
-                </TabsList>
-                <TabsContent value="sdr" className="flex-1 mt-2">
-                  <Textarea 
-                    className="h-full font-mono text-sm resize-none"
-                    placeholder="You are an expert SDR..."
-                    value={config.semantic_prompts?.sdr || ""}
-                    onChange={(e) => setConfig({ ...config, semantic_prompts: { ...config.semantic_prompts, sdr: e.target.value } })}
-                  />
-                </TabsContent>
-                <TabsContent value="gatekeeper" className="flex-1 mt-2">
-                  <Textarea 
-                    className="h-full font-mono text-sm resize-none"
-                    placeholder="You are a gatekeeper agent..."
-                    value={config.semantic_prompts?.gatekeeper || ""}
-                    onChange={(e) => setConfig({ ...config, semantic_prompts: { ...config.semantic_prompts, gatekeeper: e.target.value } })}
-                  />
-                </TabsContent>
-                <TabsContent value="rag_l1" className="flex-1 mt-2">
-                  <Textarea 
-                    className="h-full font-mono text-sm resize-none"
-                    placeholder="RAG L1 specific instructions..."
-                    value={config.semantic_prompts?.rag_l1 || ""}
-                    onChange={(e) => setConfig({ ...config, semantic_prompts: { ...config.semantic_prompts, rag_l1: e.target.value } })}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="flex justify-end pt-4">
-        <Button onClick={handleSave} disabled={saving} size="lg">
-          {saving ? "Saving..." : "Save Configuration"}
-        </Button>
-      </div>
+      </Tabs>
     </div>
   );
 }
