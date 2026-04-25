@@ -102,7 +102,7 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
           </div>
           <div className="space-y-2">
             <Label>Preferencia de Tema</Label>
-            <Select value={themeMode} onValueChange={setThemeMode}>
+            <Select value={themeMode} onValueChange={(v) => setThemeMode(v || "SYSTEM")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="LIGHT">Forzar Claro</SelectItem>

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeftIcon, CopyIcon } from "lucide-react";
+import { toast } from "sonner";
 import { BrandingTab } from "./components/BrandingTab";
 import { PromptsTab } from "./components/PromptsTab";
 
@@ -223,7 +224,7 @@ export default function TenantDetailPage() {
                   <Label htmlFor="llm_tier">LLM Tier</Label>
                   <Select 
                     value={config.llm_tier || "gemini-flash"} 
-                    onValueChange={(val) => setConfig({ ...config, llm_tier: val })}
+                    onValueChange={(val) => setConfig({ ...config, llm_tier: val || "gemini-flash" })}
                   >
                     <SelectTrigger id="llm_tier">
                       <SelectValue placeholder="Select LLM Tier" />
