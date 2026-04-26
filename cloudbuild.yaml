@@ -2,6 +2,8 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args:
   - 'build'
+  - '--no-cache'
+  - '--progress=plain'
   - '--build-arg'
   - 'NEXT_PUBLIC_SUPABASE_URL=${_NEXT_PUBLIC_SUPABASE_URL}'
   - '--build-arg'
@@ -23,5 +25,5 @@ steps:
   - 'us-central1'
 images:
 - 'gcr.io/teseobot-487515/teseo-mission-control'
-options:
-  logging: CLOUD_LOGGING_ONLY
+# logging default: streams build output inline for debugging
+# (removed CLOUD_LOGGING_ONLY to expose Docker build errors)
