@@ -21,26 +21,26 @@ export function PromptsTab({ tenantId }: { tenantId: string }) {
   const supabase = createClient();
 
   useEffect(() => {
-    loadPrompts();
-  }, [tenantId]);
+    const loadPrompts = async () => {
+      setFetching(true);
+      const { data } = await supabase
+        .from("tenant_configs")
+        .select("semantic_prompts")
+        .eq("tenant_id", tenantId)
+        .single();
+        
+      if (data && data.semantic_prompts) {
+        setPrompts({
+          sdr: data.semantic_prompts.sdr || "",
+          gatekeeper: data.semantic_prompts.gatekeeper || "",
+          rag_l1: data.semantic_prompts.rag_l1 || ""
+        });
+      }
+      setFetching(false);
+    };
 
-  const loadPrompts = async () => {
-    setFetching(true);
-    const { data, error } = await supabase
-      .from("tenant_configs")
-      .select("semantic_prompts")
-      .eq("tenant_id", tenantId)
-      .single();
-      
-    if (data && data.semantic_prompts) {
-      setPrompts({
-        sdr: data.semantic_prompts.sdr || "",
-        gatekeeper: data.semantic_prompts.gatekeeper || "",
-        rag_l1: data.semantic_prompts.rag_l1 || ""
-      });
-    }
-    setFetching(false);
-  };
+    loadPrompts();
+  }, [tenantId, supabase]);
 
   const handleSave = async () => {
     setLoading(true);

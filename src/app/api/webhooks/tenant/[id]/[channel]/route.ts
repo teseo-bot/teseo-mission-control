@@ -4,15 +4,15 @@ import { createClient } from "@supabase/supabase-js";
 // Cache in-memory para no saturar Supabase en Webhooks de alta frecuencia
 const urlCache = new Map<string, { url: string; expires: number }>();
 
-export async function POST(req: NextRequest, { params }: { params: any }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; channel: string }> | { id: string; channel: string } }) {
   return handleProxy(req, params);
 }
 
-export async function GET(req: NextRequest, { params }: { params: any }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string; channel: string }> | { id: string; channel: string } }) {
   return handleProxy(req, params);
 }
 
-async function handleProxy(req: NextRequest, params: any) {
+async function handleProxy(req: NextRequest, params: Promise<{ id: string; channel: string }> | { id: string; channel: string }) {
   // Manejo seguro para Next.js 14 o 15 (params como Promise o como objeto directo)
   const resolvedParams = await params;
   const { id, channel } = resolvedParams;

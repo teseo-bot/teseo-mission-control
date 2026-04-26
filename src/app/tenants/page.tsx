@@ -47,9 +47,10 @@ export default function TenantsPage() {
         }
 
         setTenants(data || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching tenants:", err);
-        setError(err.message || "Failed to fetch tenants.");
+        const msg = err instanceof Error ? err.message : "Failed to fetch tenants.";
+        setError(msg);
       } finally {
         setLoading(false);
       }

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,7 +20,7 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     async function loadConfig() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("tenant_configs")
         .select("primary_color, theme_mode, logo_url")
         .eq("tenant_id", tenantId)

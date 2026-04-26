@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +28,7 @@ interface TenantConfig {
   tenant_id: string;
   semantic_prompts: { sdr: string; gatekeeper: string; rag_l1: string };
   llm_tier: string;
-  features: Record<string, any>;
+  features: Record<string, unknown>;
 }
 
 export default function TenantDetailPage() {
@@ -75,9 +74,10 @@ export default function TenantDetailPage() {
         if (configData) {
           setConfig(configData);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching data:", err);
-        toast.error("Failed to fetch tenant details: " + err.message);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        toast.error("Failed to fetch tenant details: " + msg);
       } finally {
         setLoading(false);
       }
@@ -117,9 +117,10 @@ export default function TenantDetailPage() {
       if (configError) throw configError;
 
       toast.success("Tenant configuration saved successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Save error:", err);
-      toast.error("Failed to save changes: " + err.message);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Failed to save changes: " + msg);
     } finally {
       setSaving(false);
     }
@@ -178,7 +179,7 @@ export default function TenantDetailPage() {
                   <Label htmlFor="status">Estado</Label>
                   <Select 
                     value={tenant.status} 
-                    onValueChange={(val) => setTenant({ ...tenant, status: val as any })}
+                    onValueChange={(val) => setTenant({ ...tenant, status: val as "active" | "suspended" | "onboarding" })}
                   >
                     <SelectTrigger id="status">
                       <SelectValue placeholder="Select status" />
