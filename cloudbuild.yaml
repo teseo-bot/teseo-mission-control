@@ -27,3 +27,5 @@ images:
 - 'gcr.io/teseobot-487515/teseo-mission-control'
 # logging default: streams build output inline for debugging
 # (removed CLOUD_LOGGING_ONLY to expose Docker build errors)
+options:
+  logging: CLOUD_LOGGING_ONLY
