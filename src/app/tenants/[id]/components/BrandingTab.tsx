@@ -2,6 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { z } from "zod";
+
+const oklchSchema = z.string().regex(/^oklch\(\s*\d*\.?\d+%?\s+\d*\.?\d+%?\s+\d*\.?\d+(?:deg|rad|turn|grad|%?)?\s*\)$/i, "El color debe tener el formato oklch(L C H)");
+
 import { createClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +16,7 @@ import { toast } from "sonner";
 
 export function BrandingTab({ tenantId }: { tenantId: string }) {
   const [loading, setLoading] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState("222.2 47.4% 11.2%");
+  const [primaryColor, setPrimaryColor] = useState("oklch(0.205 0 0)");
   const [themeMode, setThemeMode] = useState("SYSTEM");
   const [logoUrl, setLogoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -26,7 +30,7 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
         .eq("tenant_id", tenantId)
         .single();
       if (data) {
-        setPrimaryColor(data.primary_color || "222.2 47.4% 11.2%");
+        setPrimaryColor(data.primary_color || "oklch(0.205 0 0)");
         setThemeMode(data.theme_mode || "SYSTEM");
         setLogoUrl(data.logo_url || "");
       }
@@ -35,6 +39,13 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
   }, [tenantId, supabase]);
 
   const handleSave = async () => {
+    try {
+      oklchSchema.parse(primaryColor);
+    } catch {
+      toast.error("Formato de color inválido. Use oklch(L C H), ej. oklch(0.205 0 0)");
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase
       .from("tenant_configs")
@@ -98,8 +109,8 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Color Primario (Tailwind HSL)</Label>
-            <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="Ej. 222.2 47.4% 11.2%" />
+            <Label>Color Primario (OKLCH)</Label>
+            <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="Ej. oklch(0.205 0 0)" />
           </div>
           <div className="space-y-2">
             <Label>Preferencia de Tema</Label>
