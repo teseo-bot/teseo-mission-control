@@ -12,6 +12,7 @@ import { OperationTab } from "./components/OperationTab";
 import { BrandingTab } from "./components/BrandingTab";
 import { PromptsTab } from "./components/PromptsTab";
 import { AccessTab } from "./components/AccessTab";
+import { VaultTab } from "./components/VaultTab";
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -102,11 +103,12 @@ export default function TenantDetailPage() {
       </div>
 
       <Tabs defaultValue="core" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-4">
+        <TabsList className="mb-6 grid w-full grid-cols-5">
           <TabsTrigger value="core">Operación</TabsTrigger>
           <TabsTrigger value="branding">Branding & UI</TabsTrigger>
           <TabsTrigger value="prompts">Prompts & IA</TabsTrigger>
           <TabsTrigger value="access">Accesos & Roles</TabsTrigger>
+          <TabsTrigger value="vault">API Keys</TabsTrigger>
         </TabsList>
 
         <TabsContent value="core" className="space-y-6">
@@ -123,6 +125,10 @@ export default function TenantDetailPage() {
 
         <TabsContent value="access" className="mt-0">
            <AccessTab tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="vault" className="mt-0">
+           <VaultTab tenantId={tenant.id} />
         </TabsContent>
 
       </Tabs>
