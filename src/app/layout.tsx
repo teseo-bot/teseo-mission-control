@@ -4,7 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { createClient } from "@/lib/supabase-server";
-import { TenantHydrationProvider } from "@/components/TenantHydrationProvider";
+import { TenantThemeStyle } from "@/components/TenantThemeStyle";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -26,8 +26,17 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user;
+  } catch (err: any) {
+    if (err?.digest === 'DYNAMIC_SERVER_USAGE') {
+      throw err;
+    }
+    console.error("Supabase SSR error in layout:", err);
+  }
 
   return (
     <html
@@ -35,8 +44,8 @@ export default async function RootLayout({
       className={`${inter.variable} ${geistMono.variable} antialiased`}
     >
       <body className="flex min-h-screen w-full flex-col">
-        <TenantHydrationProvider>
-          {user ? (
+        <TenantThemeStyle />
+        {user ? (
             <div className="flex min-h-screen w-full bg-muted/40">
               <Sidebar />
               <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 w-full">
@@ -51,7 +60,6 @@ export default async function RootLayout({
             </main>
           )}
           <Toaster />
-        </TenantHydrationProvider>
       </body>
     </html>
   );

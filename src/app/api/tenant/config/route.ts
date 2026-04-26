@@ -30,6 +30,7 @@ export async function GET() {
     return NextResponse.json({ primary_color: null, theme_mode: "SYSTEM", logo_url: null });
   } catch (err) {
     console.error("Error fetching tenant config:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    // Return fallback safely instead of 500 to keep UI alive
+    return NextResponse.json({ primary_color: null, theme_mode: "SYSTEM", logo_url: null });
   }
 }
