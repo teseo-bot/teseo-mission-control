@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useTenantStore } from "@/hooks/useTenantStore";
 
 function buildOklchOverrides(color: string) {
@@ -14,7 +14,6 @@ function buildOklchOverrides(color: string) {
 
 export function useTenantTheme() {
   const { theme, setTheme } = useTenantStore();
-  const [cssOverrides, setCssOverrides] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchTenantConfig() {
@@ -32,12 +31,11 @@ export function useTenantTheme() {
     fetchTenantConfig();
   }, [setTheme]);
 
-  useEffect(() => {
+  const cssOverrides = useMemo(() => {
     if (theme.primary_color) {
-      setCssOverrides(buildOklchOverrides(theme.primary_color));
-    } else {
-      setCssOverrides(null);
+      return buildOklchOverrides(theme.primary_color);
     }
+    return null;
   }, [theme.primary_color]);
 
   return { cssOverrides };

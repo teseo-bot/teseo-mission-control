@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { useTenantDetailStore } from "@/hooks/useTenantDetailStore";
 import { brandingSchema } from "@/lib/schemas/tenant";
 
@@ -23,7 +24,7 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
   const [uploading, setUploading] = useState(false);
 
   const form = useForm<BrandingFormValues>({
-    resolver: zodResolver(brandingSchema) as any,
+    resolver: zodResolver(brandingSchema),
     defaultValues: {
       primary_color: config?.primary_color || "oklch(0.205 0 0)",
       accent_color: config?.accent_color || "oklch(0.97 0.01 106.42)",
@@ -144,7 +145,7 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
                   <FormItem>
                     <FormLabel>Color Primario (OKLCH)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej. oklch(0.205 0 0)" {...field} value={field.value || ""} />
+                      <ColorPicker {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -157,7 +158,7 @@ export function BrandingTab({ tenantId }: { tenantId: string }) {
                   <FormItem>
                     <FormLabel>Color de Acento (OKLCH)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej. oklch(0.97 0.01 106.42)" {...field} value={field.value || ""} />
+                      <ColorPicker {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

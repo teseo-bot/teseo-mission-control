@@ -31,8 +31,8 @@ export default async function RootLayout({
     const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
     user = data?.user;
-  } catch (err: any) {
-    if (err?.digest === 'DYNAMIC_SERVER_USAGE') {
+  } catch (err: unknown) {
+    if ((err as { digest?: string })?.digest === 'DYNAMIC_SERVER_USAGE') {
       throw err;
     }
     console.error("Supabase SSR error in layout:", err);
