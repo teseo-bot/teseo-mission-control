@@ -9,6 +9,7 @@ import { ArrowLeftIcon, CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTenantDetailStore } from "@/hooks/useTenantDetailStore";
 import { OperationTab } from "./components/OperationTab";
+import { CustomerDataTab } from "./components/CustomerDataTab";
 import { BrandingTab } from "./components/BrandingTab";
 import { PromptsTab } from "./components/PromptsTab";
 import { AccessTab } from "./components/AccessTab";
@@ -103,8 +104,9 @@ export default function TenantDetailPage() {
       </div>
 
       <Tabs defaultValue="core" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-5">
+        <TabsList className="mb-6 grid w-full grid-cols-6">
           <TabsTrigger value="core">Operación</TabsTrigger>
+          <TabsTrigger value="customer">Cliente</TabsTrigger>
           <TabsTrigger value="branding">Branding & UI</TabsTrigger>
           <TabsTrigger value="prompts">Prompts & IA</TabsTrigger>
           <TabsTrigger value="access">Accesos & Roles</TabsTrigger>
@@ -113,6 +115,10 @@ export default function TenantDetailPage() {
 
         <TabsContent value="core" className="space-y-6">
           <OperationTab />
+        </TabsContent>
+
+        <TabsContent value="customer" className="space-y-6">
+          <CustomerDataTab tenantId={tenant.id} />
         </TabsContent>
 
         <TabsContent value="branding" className="mt-0">
