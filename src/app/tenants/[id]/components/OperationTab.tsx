@@ -33,9 +33,15 @@ export function OperationTab() {
       tg_authorized_groups: "",
       wa_phone_id: "",
       wa_verify_token: "",
-      email_connection_string: "",
+      wa_access_token: "",
+      email_address: "",
+      email_password: "",
+      email_imap_host: "",
+      email_smtp_host: "",
       mcp_odoo_url: "",
-      mcp_odoo_db: ""
+      mcp_odoo_db: "",
+      mcp_odoo_user: "",
+      mcp_odoo_password: ""
     },
   });
 
@@ -53,9 +59,15 @@ export function OperationTab() {
         tg_authorized_groups: channels.tg_authorized_groups || "",
         wa_phone_id: channels.wa_phone_id || "",
         wa_verify_token: channels.wa_verify_token || "",
-        email_connection_string: channels.email_connection_string || "",
+        wa_access_token: channels.wa_access_token || "",
+        email_address: channels.email_address || "",
+        email_password: channels.email_password || "",
+        email_imap_host: channels.email_imap_host || "",
+        email_smtp_host: channels.email_smtp_host || "",
         mcp_odoo_url: mcp.url || "",
         mcp_odoo_db: mcp.db || "",
+        mcp_odoo_user: mcp.user || "",
+        mcp_odoo_password: mcp.password || "",
       });
     }
   }, [tenant, config, form]);
@@ -88,11 +100,17 @@ export function OperationTab() {
           tg_authorized_groups: data.tg_authorized_groups,
           wa_phone_id: data.wa_phone_id,
           wa_verify_token: data.wa_verify_token,
-          email_connection_string: data.email_connection_string
+          wa_access_token: data.wa_access_token,
+          email_address: data.email_address,
+          email_password: data.email_password,
+          email_imap_host: data.email_imap_host,
+          email_smtp_host: data.email_smtp_host,
         },
         mcp_odoo: {
           url: data.mcp_odoo_url,
-          db: data.mcp_odoo_db
+          db: data.mcp_odoo_db,
+          user: data.mcp_odoo_user,
+          password: data.mcp_odoo_password,
         }
       };
 
@@ -295,10 +313,24 @@ export function OperationTab() {
                       name="wa_verify_token"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Verify Token</FormLabel>
+                          <FormLabel>Verify Token (Webhook)</FormLabel>
                           <FormControl>
                             <Input placeholder="Tu_Token_Secreto" {...field} value={field.value || ""} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="wa_access_token"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>System User Access Token (API Key)</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="EAAI... (Token permanente de Meta)" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormDescription>Permite al Orchestrator enviar mensajes de salida.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -308,29 +340,72 @@ export function OperationTab() {
                   <TabsContent value="email" className="space-y-4">
                     <FormField
                       control={form.control}
-                      name="email_connection_string"
+                      name="email_address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Cadena de Conexión (SMTP/IMAP)</FormLabel>
+                          <FormLabel>Correo Electrónico (Usuario)</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="smtps://user:pass@smtp.gmail.com:465" {...field} value={field.value || ""} />
+                            <Input type="email" placeholder="agente@empresa.com" {...field} value={field.value || ""} />
                           </FormControl>
-                          <FormDescription>Usada por el Email Worker para lectura y envío.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="email_password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contraseña de Aplicación (App Password)</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••••••" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="email_imap_host"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Servidor IMAP (Lectura)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="imap.gmail.com:993" {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email_smtp_host"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Servidor SMTP (Envío)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="smtp.gmail.com:465" {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="mcp" className="space-y-4">
+                    <div className="bg-muted/30 p-3 rounded-md mb-2">
+                      <p className="text-sm text-muted-foreground">Configuración para conectores SSE (Server-Sent Events) del protocolo MCP.</p>
+                    </div>
                     <FormField
                       control={form.control}
                       name="mcp_odoo_url"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Odoo URL</FormLabel>
+                          <FormLabel>Odoo SSE URL</FormLabel>
                           <FormControl>
-                            <Input placeholder="https://mi-empresa.odoo.com" {...field} value={field.value || ""} />
+                            <Input placeholder="https://odoo-mcp.mi-empresa.com/sse" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -341,7 +416,7 @@ export function OperationTab() {
                       name="mcp_odoo_db"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Odoo Database</FormLabel>
+                          <FormLabel>Database Name (Odoo)</FormLabel>
                           <FormControl>
                             <Input placeholder="mi-empresa-db" {...field} value={field.value || ""} />
                           </FormControl>
@@ -349,6 +424,34 @@ export function OperationTab() {
                         </FormItem>
                       )}
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="mcp_odoo_user"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Odoo Username / Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="api@empresa.com" {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="mcp_odoo_password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>API Key / Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="••••••••••••" {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </TabsContent>
                 </Tabs>
               </CardContent>

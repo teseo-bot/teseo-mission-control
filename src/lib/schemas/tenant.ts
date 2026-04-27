@@ -11,9 +11,15 @@ export const operationSchema = z.object({
   tg_authorized_groups: z.string().nullable().optional(),
   wa_phone_id: z.string().nullable().optional(),
   wa_verify_token: z.string().nullable().optional(),
-  email_connection_string: z.string().nullable().optional(),
+  wa_access_token: z.string().nullable().optional(),
+  email_address: z.string().email("Correo inválido").nullable().optional().or(z.literal("")),
+  email_password: z.string().nullable().optional(),
+  email_imap_host: z.string().nullable().optional(),
+  email_smtp_host: z.string().nullable().optional(),
   mcp_odoo_url: z.string().url().nullable().optional().or(z.literal("")),
   mcp_odoo_db: z.string().nullable().optional(),
+  mcp_odoo_user: z.string().nullable().optional(),
+  mcp_odoo_password: z.string().nullable().optional(),
 });
 
 // ─── Branding ───
