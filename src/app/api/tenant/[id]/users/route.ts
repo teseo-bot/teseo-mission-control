@@ -3,16 +3,22 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-server";
 import { updateRoleSchema } from "@/lib/schemas/tenant";
 
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseAdmin = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+  : null;
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!supabaseAdmin) {
+       return NextResponse.json({ error: "Missing Supabase admin config" }, { status: 500 });
+    }
+
     const { id: tenantId } = await context.params;
 
     // Fetch tenant_users
@@ -58,6 +64,10 @@ export async function PATCH(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!supabaseAdmin) {
+       return NextResponse.json({ error: "Missing Supabase admin config" }, { status: 500 });
     }
 
     const { data: currentMembership } = await supabaseAdmin
