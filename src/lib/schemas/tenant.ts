@@ -16,10 +16,17 @@ export const operationSchema = z.object({
   email_password: z.string().nullable().optional(),
   email_imap_host: z.string().nullable().optional(),
   email_smtp_host: z.string().nullable().optional(),
-  mcp_odoo_url: z.string().url().nullable().optional().or(z.literal("")),
-  mcp_odoo_db: z.string().nullable().optional(),
-  mcp_odoo_user: z.string().nullable().optional(),
-  mcp_odoo_password: z.string().nullable().optional(),
+  
+  // Dynamic MCP Servers
+  mcp_servers: z.array(z.object({
+    id: z.string().min(1, "ID requerido"),
+    type: z.enum(["sse", "stdio"]),
+    url: z.string().url("URL inválida").or(z.literal("")),
+    env: z.array(z.object({
+      key: z.string().min(1, "Llave requerida"),
+      value: z.string()
+    })).optional()
+  })).optional()
 });
 
 // ─── Branding ───

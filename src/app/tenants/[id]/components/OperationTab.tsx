@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useTenantDetailStore } from "@/hooks/useTenantDetailStore";
 import { createClient } from "@/lib/supabase";
 import { operationSchema } from "@/lib/schemas/tenant";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, Minus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type OperationFormValues = z.infer<typeof operationSchema>;
@@ -21,6 +21,7 @@ type OperationFormValues = z.infer<typeof operationSchema>;
 export function OperationTab() {
   const { tenant, config, setTenant, setConfig, saving, setSaving } = useTenantDetailStore();
   const supabase = createClient();
+  const [domainHost, setDomainHost] = useState("");
 
   const form = useForm<OperationFormValues>({
     resolver: zodResolver(operationSchema),
@@ -38,17 +39,22 @@ export function OperationTab() {
       email_password: "",
       email_imap_host: "",
       email_smtp_host: "",
-      mcp_odoo_url: "",
-      mcp_odoo_db: "",
-      mcp_odoo_user: "",
-      mcp_odoo_password: ""
+      mcp_servers: []
     },
   });
+
+  const { fields: mcpFields, append: appendMcp, remove: removeMcp } = useFieldArray({
+    control: form.control,
+    name: "mcp_servers"
+  });
+
+  // Escuchar cambios en el input del dominio para la tarjeta DNS
+  const currentDomain = form.watch("domain");
 
   useEffect(() => {
     if (tenant && config) {
       const channels = (config.features?.channels as any) || {};
-      const mcp = (config.features?.mcp_odoo as any) || {};
+      const storedMcps = (config.features?.mcp_servers as any[]) || [];
       
       form.reset({
         status: tenant.status || "active",
@@ -64,10 +70,7 @@ export function OperationTab() {
         email_password: channels.email_password || "",
         email_imap_host: channels.email_imap_host || "",
         email_smtp_host: channels.email_smtp_host || "",
-        mcp_odoo_url: mcp.url || "",
-        mcp_odoo_db: mcp.db || "",
-        mcp_odoo_user: mcp.user || "",
-        mcp_odoo_password: mcp.password || "",
+        mcp_servers: storedMcps
       });
     }
   }, [tenant, config, form]);
@@ -106,12 +109,7 @@ export function OperationTab() {
           email_imap_host: data.email_imap_host,
           email_smtp_host: data.email_smtp_host,
         },
-        mcp_odoo: {
-          url: data.mcp_odoo_url,
-          db: data.mcp_odoo_db,
-          user: data.mcp_odoo_user,
-          password: data.mcp_odoo_password,
-        }
+        mcp_servers: data.mcp_servers || []
       };
 
       const { error: configError } = await supabase
@@ -207,6 +205,19 @@ export function OperationTab() {
                     </FormItem>
                   )}
                 />
+                {currentDomain && currentDomain.length > 3 && (
+                  <div className="bg-muted/40 border border-muted-foreground/20 rounded-md p-3 text-sm">
+                    <p className="font-semibold mb-1">Instrucciones DNS para el cliente:</p>
+                    <div className="grid grid-cols-3 gap-2 font-mono text-xs bg-black/10 dark:bg-white/10 p-2 rounded">
+                      <span className="text-muted-foreground">TIPO</span>
+                      <span className="text-muted-foreground">HOST / NOMBRE</span>
+                      <span className="text-muted-foreground">DESTINO / VALOR</span>
+                      <span>CNAME</span>
+                      <span>{currentDomain}</span>
+                      <span>ghs.googlehosted.com</span>
+                    </div>
+                  </div>
+                )}
                 <FormField
                   control={form.control}
                   name="orchestrator_url"
@@ -225,10 +236,11 @@ export function OperationTab() {
                   name="api_key_vault_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vault Key ID</FormLabel>
+                      <FormLabel>Vault Key ID (Gestor de Secretos)</FormLabel>
                       <FormControl>
-                        <Input placeholder="vault-xyz" {...field} value={field.value || ""} />
+                        <Input placeholder="Supabase Vault ID o Secret Manager ID" {...field} value={field.value || ""} />
                       </FormControl>
+                      <FormDescription>Evita guardar tokens maestros en texto plano.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -261,7 +273,7 @@ export function OperationTab() {
                     <TabsTrigger value="telegram">Telegram</TabsTrigger>
                     <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
                     <TabsTrigger value="email">Correo</TabsTrigger>
-                    <TabsTrigger value="mcp">MCP</TabsTrigger>
+                    <TabsTrigger value="mcp">MCPs</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="telegram" className="space-y-4">
@@ -395,63 +407,135 @@ export function OperationTab() {
                   </TabsContent>
 
                   <TabsContent value="mcp" className="space-y-4">
-                    <div className="bg-muted/30 p-3 rounded-md mb-2">
-                      <p className="text-sm text-muted-foreground">Configuración para conectores SSE (Server-Sent Events) del protocolo MCP.</p>
+                    <div className="bg-muted/30 p-3 rounded-md mb-4 flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Configuración para múltiples conectores Model Context Protocol (SSE).</p>
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendMcp({ id: "", type: "sse", url: "", env: [] })}>
+                        <Plus className="w-4 h-4 mr-1" /> Añadir
+                      </Button>
                     </div>
-                    <FormField
-                      control={form.control}
-                      name="mcp_odoo_url"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Odoo SSE URL</FormLabel>
-                          <FormControl>
-                            <Input placeholder="https://odoo-mcp.mi-empresa.com/sse" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="mcp_odoo_db"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Database Name (Odoo)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="mi-empresa-db" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="mcp_odoo_user"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Odoo Username / Email</FormLabel>
-                            <FormControl>
-                              <Input placeholder="api@empresa.com" {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="mcp_odoo_password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>API Key / Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="••••••••••••" {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    
+                    {mcpFields.map((field, index) => (
+                      <div key={field.id} className="border p-4 rounded-md space-y-4 relative">
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:bg-red-50"
+                          onClick={() => removeMcp(index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <div className="grid grid-cols-2 gap-4 pr-6">
+                          <FormField
+                            control={form.control}
+                            name={`mcp_servers.${index}.id`}
+                            render={({ field: f }) => (
+                              <FormItem>
+                                <FormLabel>ID del MCP</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="odoo_mcp" {...f} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`mcp_servers.${index}.type`}
+                            render={({ field: f }) => (
+                              <FormItem>
+                                <FormLabel>Protocolo</FormLabel>
+                                <Select onValueChange={f.onChange} defaultValue={f.value}>
+                                  <FormControl>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="sse">HTTP / SSE</SelectItem>
+                                    <SelectItem value="stdio" disabled>STDIO (Local)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name={`mcp_servers.${index}.url`}
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel>Endpoint URL</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://api.mi-mcp.com/sse" {...f} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="space-y-2 mt-4 pt-4 border-t">
+                          <div className="flex justify-between items-center">
+                            <FormLabel>Variables de Entorno (Credenciales)</FormLabel>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 text-xs px-2"
+                              onClick={() => {
+                                const currentEnv = form.getValues(`mcp_servers.${index}.env`) || [];
+                                form.setValue(`mcp_servers.${index}.env`, [...currentEnv, { key: "", value: "" }]);
+                              }}
+                            >
+                              <Plus className="w-3 h-3 mr-1" /> Var
+                            </Button>
+                          </div>
+                          
+                          {form.watch(`mcp_servers.${index}.env`)?.map((envItem, envIndex) => (
+                            <div key={envIndex} className="flex items-center gap-2">
+                              <FormField
+                                control={form.control}
+                                name={`mcp_servers.${index}.env.${envIndex}.key`}
+                                render={({ field: f }) => (
+                                  <FormItem className="flex-1">
+                                    <FormControl><Input placeholder="ODOO_DB" className="h-8 text-xs" {...f} /></FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`mcp_servers.${index}.env.${envIndex}.value`}
+                                render={({ field: f }) => (
+                                  <FormItem className="flex-1">
+                                    <FormControl><Input type="password" placeholder="Valor" className="h-8 text-xs" {...f} /></FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground"
+                                onClick={() => {
+                                  const currentEnv = form.getValues(`mcp_servers.${index}.env`) || [];
+                                  form.setValue(`mcp_servers.${index}.env`, currentEnv.filter((_, i) => i !== envIndex));
+                                }}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          {(!form.watch(`mcp_servers.${index}.env`) || form.watch(`mcp_servers.${index}.env`)?.length === 0) && (
+                            <p className="text-xs text-muted-foreground italic">Sin variables de entorno.</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {mcpFields.length === 0 && (
+                      <div className="text-center p-6 border border-dashed rounded-md bg-muted/10">
+                        <p className="text-sm text-muted-foreground">No hay servidores MCP configurados.</p>
+                      </div>
+                    )}
                   </TabsContent>
                 </Tabs>
               </CardContent>
