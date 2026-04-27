@@ -22,6 +22,9 @@ interface Tenant {
   orchestrator_url?: string;
 }
 
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 export default function TenantsPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -71,11 +74,16 @@ export default function TenantsPage() {
   return (
     <div className="container mx-auto py-10 space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Tenants</CardTitle>
-          <CardDescription>
-            List of all tenants registered in the Mission Control platform. Click a row to view and edit details.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Tenants</CardTitle>
+            <CardDescription>
+              List of all tenants registered in the Mission Control platform. Click a row to view and edit details.
+            </CardDescription>
+          </div>
+          <Button onClick={() => router.push("/tenants/new")}>
+            <Plus className="w-4 h-4 mr-2" /> New Tenant
+          </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
