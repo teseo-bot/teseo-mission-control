@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,6 +32,19 @@ export function OperationTab() {
       features: config?.features || {},
     },
   });
+
+  useEffect(() => {
+    if (tenant) {
+      form.reset({
+        status: tenant.status || "active",
+        orchestrator_url: tenant.orchestrator_url || "",
+        api_key_vault_id: tenant.api_key_vault_id || "",
+        domain: tenant.domain || "",
+        llm_tier: (config?.llm_tier as "gemini-flash" | "claude-sonnet" | "claude-opus") || "gemini-flash",
+        features: config?.features || {},
+      });
+    }
+  }, [tenant, config, form]);
 
   if (!tenant || !config) return null;
 
@@ -167,37 +181,6 @@ export function OperationTab() {
           </Card>
 
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Engine Config</CardTitle>
-                <CardDescription>LLM Tiers y configuración central.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="llm_tier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>LLM Tier</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona tier" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="gemini-flash">Gemini Flash</SelectItem>
-                          <SelectItem value="claude-sonnet">Claude Sonnet</SelectItem>
-                          <SelectItem value="claude-opus">Claude Opus</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Peligro</CardTitle>
