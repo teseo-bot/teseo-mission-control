@@ -14,11 +14,12 @@ import { useTenantDetailStore } from "@/hooks/useTenantDetailStore";
 import { createClient } from "@/lib/supabase";
 import { operationSchema } from "@/lib/schemas/tenant";
 import { Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type OperationFormValues = z.infer<typeof operationSchema>;
 
 export function OperationTab() {
-  const { tenant, setTenant, saving, setSaving } = useTenantDetailStore();
+  const { tenant, config, setTenant, setConfig, saving, setSaving } = useTenantDetailStore();
   const supabase = createClient();
 
   const form = useForm<OperationFormValues>({
@@ -28,24 +29,41 @@ export function OperationTab() {
       orchestrator_url: tenant?.orchestrator_url || "",
       api_key_vault_id: tenant?.api_key_vault_id || "",
       domain: tenant?.domain || "",
+      tg_bot_token: "",
+      tg_authorized_groups: "",
+      wa_phone_id: "",
+      wa_verify_token: "",
+      email_connection_string: "",
+      mcp_odoo_url: "",
+      mcp_odoo_db: ""
     },
   });
 
   useEffect(() => {
-    if (tenant) {
+    if (tenant && config) {
+      const channels = (config.features?.channels as any) || {};
+      const mcp = (config.features?.mcp_odoo as any) || {};
+      
       form.reset({
         status: tenant.status || "active",
         orchestrator_url: tenant.orchestrator_url || "",
         api_key_vault_id: tenant.api_key_vault_id || "",
         domain: tenant.domain || "",
+        tg_bot_token: channels.tg_bot_token || "",
+        tg_authorized_groups: channels.tg_authorized_groups || "",
+        wa_phone_id: channels.wa_phone_id || "",
+        wa_verify_token: channels.wa_verify_token || "",
+        email_connection_string: channels.email_connection_string || "",
+        mcp_odoo_url: mcp.url || "",
+        mcp_odoo_db: mcp.db || "",
       });
     }
-  }, [tenant, form]);
+  }, [tenant, config, form]);
 
-  if (!tenant) return null;
+  if (!tenant || !config) return null;
 
   async function onSubmit(data: OperationFormValues) {
-    if (!tenant) return;
+    if (!tenant || !config) return;
     try {
       setSaving("core", true);
       
@@ -61,9 +79,34 @@ export function OperationTab() {
         
       if (tenantError) throw tenantError;
 
+      // Guardar configs de canales en JSONB features
+      const currentFeatures = config.features || {};
+      const updatedFeatures = {
+        ...currentFeatures,
+        channels: {
+          tg_bot_token: data.tg_bot_token,
+          tg_authorized_groups: data.tg_authorized_groups,
+          wa_phone_id: data.wa_phone_id,
+          wa_verify_token: data.wa_verify_token,
+          email_connection_string: data.email_connection_string
+        },
+        mcp_odoo: {
+          url: data.mcp_odoo_url,
+          db: data.mcp_odoo_db
+        }
+      };
+
+      const { error: configError } = await supabase
+        .from("tenant_configs")
+        .update({ features: updatedFeatures })
+        .eq("tenant_id", tenant.id);
+
+      if (configError) throw configError;
+
       setTenant({ ...tenant, status: data.status, orchestrator_url: data.orchestrator_url ?? null, api_key_vault_id: data.api_key_vault_id ?? null, domain: data.domain ?? null });
+      setConfig({ ...config, features: updatedFeatures } as any);
       
-      toast.success("Operación guardada correctamente");
+      toast.success("Operación y Canales guardados correctamente");
     } catch (err) {
       console.error(err);
       toast.error("Error al guardar operación: " + (err instanceof Error ? err.message : String(err)));
@@ -83,10 +126,10 @@ export function OperationTab() {
         method: 'POST',
       });
       
-      const data = await response.json();
+      const resData = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || "Error invoking backup and suspend endpoint");
+        throw new Error(resData.error || "Error invoking backup and suspend endpoint");
       }
 
       setTenant({ ...tenant, status: "suspended" });
@@ -103,93 +146,217 @@ export function OperationTab() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Identidad & Routing</CardTitle>
-              <CardDescription>Estado base del tenant y webhooks de orquestación.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un estado" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Activo</SelectItem>
-                        <SelectItem value="suspended">Suspendido</SelectItem>
-                        <SelectItem value="onboarding">Onboarding</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="domain"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dominio Personalizado (opcional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="app.ejemplo.com" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormDescription>Debe ser único en toda la plataforma.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="orchestrator_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Orchestrator URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://..." {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="api_key_vault_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vault Key ID</FormLabel>
-                    <FormControl>
-                      <Input placeholder="vault-xyz" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Peligro</CardTitle>
+                <CardTitle>Identidad & Routing</CardTitle>
+                <CardDescription>Estado base del tenant y webhooks de orquestación.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un estado" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Activo</SelectItem>
+                          <SelectItem value="suspended">Suspendido</SelectItem>
+                          <SelectItem value="onboarding">Onboarding</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="domain"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dominio Personalizado (opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="app.ejemplo.com" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormDescription>Debe ser único en toda la plataforma.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="orchestrator_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Orchestrator URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="api_key_vault_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vault Key ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="vault-xyz" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-red-500">Peligro</CardTitle>
                 <CardDescription>Acciones destructivas o críticas.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button type="button" variant="destructive" onClick={handleKillSwitch} disabled={saving["core"]}>
+                <Button type="button" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950" onClick={handleKillSwitch} disabled={saving["core"]}>
                   <Trash2 className="w-4 h-4 mr-2" /> Kill Switch (Suspender)
                 </Button>
               </CardContent>
             </Card>
           </div>
+
+          <div className="space-y-6">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Canales & Conectores</CardTitle>
+                <CardDescription>Endpoints de comunicación y extensiones MCP.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="telegram" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4 mb-4">
+                    <TabsTrigger value="telegram">Telegram</TabsTrigger>
+                    <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+                    <TabsTrigger value="email">Correo</TabsTrigger>
+                    <TabsTrigger value="mcp">MCP</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="telegram" className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="tg_bot_token"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bot Token</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="tg_authorized_groups"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Grupos Autorizados (IDs)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="-100123456789, -100987654321" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormDescription>Separados por comas.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="whatsapp" className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="wa_phone_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number ID (Meta)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="10593847281923" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="wa_verify_token"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Verify Token</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Tu_Token_Secreto" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="email" className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="email_connection_string"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cadena de Conexión (SMTP/IMAP)</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="smtps://user:pass@smtp.gmail.com:465" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormDescription>Usada por el Email Worker para lectura y envío.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="mcp" className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="mcp_odoo_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Odoo URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://mi-empresa.odoo.com" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="mcp_odoo_db"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Odoo Database</FormLabel>
+                          <FormControl>
+                            <Input placeholder="mi-empresa-db" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 border-t">
           <Button type="submit" disabled={saving["core"]} size="lg">
             {saving["core"] ? "Guardando..." : "Guardar Cambios de Operación"}
           </Button>

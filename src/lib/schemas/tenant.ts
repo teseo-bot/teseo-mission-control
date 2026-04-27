@@ -3,11 +3,17 @@ import { z } from "zod";
 // ─── Operación ───
 export const operationSchema = z.object({
   status: z.enum(["active", "suspended", "onboarding"]),
-  orchestrator_url: z.string().url().nullable().optional(),
+  orchestrator_url: z.string().url().nullable().optional().or(z.literal("")),
   api_key_vault_id: z.string().nullable().optional(),
-  domain: z.string().min(3).nullable().optional(),
-  llm_tier: z.enum(["gemini-flash", "claude-sonnet", "claude-opus"]).optional(),
-  features: z.record(z.string(), z.unknown()).optional(),
+  domain: z.string().nullable().optional(),
+  // Channels Configurations (Stored in JSONB)
+  tg_bot_token: z.string().nullable().optional(),
+  tg_authorized_groups: z.string().nullable().optional(),
+  wa_phone_id: z.string().nullable().optional(),
+  wa_verify_token: z.string().nullable().optional(),
+  email_connection_string: z.string().nullable().optional(),
+  mcp_odoo_url: z.string().url().nullable().optional().or(z.literal("")),
+  mcp_odoo_db: z.string().nullable().optional(),
 });
 
 // ─── Branding ───
