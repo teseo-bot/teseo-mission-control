@@ -89,15 +89,25 @@ export function OperationTab() {
 
   const handleKillSwitch = async () => {
     if (!tenant) return;
-    if (!confirm("¿Estás seguro de que quieres SUSPENDER este tenant? Esto detendrá toda su operación.")) return;
+    if (!confirm("¿Estás seguro de que quieres SUSPENDER este tenant? Esto detendrá toda su operación y forzará un respaldo de base de datos.")) return;
     
     try {
       setSaving("core", true);
-      const { error } = await supabase.from("tenants").update({ status: "suspended" }).eq("id", tenant.id);
-      if (error) throw error;
+      
+      // Llamada al endpoint de backup y kill switch atómico
+      const response = await fetch(`/api/tenant/${tenant.id}/backup`, {
+        method: 'POST',
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Error invoking backup and suspend endpoint");
+      }
+
       setTenant({ ...tenant, status: "suspended" });
       form.setValue("status", "suspended");
-      toast.success("Tenant suspendido exitosamente");
+      toast.success("Tenant respaldado y suspendido exitosamente");
     } catch (err) {
       toast.error("Error al suspender tenant: " + (err instanceof Error ? err.message : String(err)));
     } finally {
