@@ -37,10 +37,12 @@ jobs:
         env:
           SUPA_URL: ${{ secrets.MISSION_CONTROL_SUPABASE_URL }}
           SUPA_ANON: ${{ secrets.MISSION_CONTROL_SUPABASE_ANON_KEY }}
+          SUPA_SERVICE_ROLE: ${{ secrets.MISSION_CONTROL_SUPABASE_SERVICE_ROLE_KEY }}
         run: |-
           docker build -t ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
           --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPA_URL" \
-          --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPA_ANON" -f ./Dockerfile .
+          --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPA_ANON" \
+          --build-arg SUPABASE_SERVICE_ROLE_KEY="$SUPA_SERVICE_ROLE" -f ./Dockerfile .
 
       - name: Push Image to Artifact Registry
         run: |-
