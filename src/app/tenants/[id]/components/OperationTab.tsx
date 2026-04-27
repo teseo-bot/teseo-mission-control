@@ -18,7 +18,7 @@ import { Trash2 } from "lucide-react";
 type OperationFormValues = z.infer<typeof operationSchema>;
 
 export function OperationTab() {
-  const { tenant, config, setTenant, setConfig, saving, setSaving } = useTenantDetailStore();
+  const { tenant, setTenant, saving, setSaving } = useTenantDetailStore();
   const supabase = createClient();
 
   const form = useForm<OperationFormValues>({
@@ -28,8 +28,6 @@ export function OperationTab() {
       orchestrator_url: tenant?.orchestrator_url || "",
       api_key_vault_id: tenant?.api_key_vault_id || "",
       domain: tenant?.domain || "",
-      llm_tier: (config?.llm_tier as "gemini-flash" | "claude-sonnet" | "claude-opus") || "gemini-flash",
-      features: config?.features || {},
     },
   });
 
@@ -40,13 +38,11 @@ export function OperationTab() {
         orchestrator_url: tenant.orchestrator_url || "",
         api_key_vault_id: tenant.api_key_vault_id || "",
         domain: tenant.domain || "",
-        llm_tier: (config?.llm_tier as "gemini-flash" | "claude-sonnet" | "claude-opus") || "gemini-flash",
-        features: config?.features || {},
       });
     }
-  }, [tenant, config, form]);
+  }, [tenant, form]);
 
-  if (!tenant || !config) return null;
+  if (!tenant) return null;
 
   async function onSubmit(data: OperationFormValues) {
     if (!tenant) return;
@@ -65,18 +61,7 @@ export function OperationTab() {
         
       if (tenantError) throw tenantError;
 
-      const { error: configError } = await supabase
-        .from("tenant_configs")
-        .upsert({
-          tenant_id: tenant.id,
-          llm_tier: data.llm_tier,
-          features: data.features,
-        }, { onConflict: "tenant_id" });
-
-      if (configError) throw configError;
-
       setTenant({ ...tenant, status: data.status, orchestrator_url: data.orchestrator_url ?? null, api_key_vault_id: data.api_key_vault_id ?? null, domain: data.domain ?? null });
-      setConfig({ ...config, llm_tier: data.llm_tier, features: data.features } as typeof config);
       
       toast.success("Operación guardada correctamente");
     } catch (err) {
@@ -94,7 +79,6 @@ export function OperationTab() {
     try {
       setSaving("core", true);
       
-      // Llamada al endpoint de backup y kill switch atómico
       const response = await fetch(`/api/tenant/${tenant.id}/backup`, {
         method: 'POST',
       });

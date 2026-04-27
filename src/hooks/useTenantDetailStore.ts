@@ -48,7 +48,14 @@ export interface TenantDetailState {
     tenant_id: string;
     llm_tier: string;
     features: Record<string, unknown>;
-    semantic_prompts: { sdr: string; gatekeeper: string; rag_l1: string };
+    semantic_prompts: { 
+      sdr: string; 
+      gatekeeper: string; 
+      rag_l1: string;
+      sdr_llm_tier?: string;
+      gatekeeper_llm_tier?: string;
+      rag_llm_tier?: string;
+    };
     // Branding
     primary_color: string | null;
     accent_color: string | null;

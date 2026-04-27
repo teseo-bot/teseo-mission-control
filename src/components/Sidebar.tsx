@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { LayoutDashboard, Users, CircleDollarSign, BellRing, LogOut } from "lucide-react"
 import { logout } from "@/app/login/actions"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 export function Sidebar() {
   return (
@@ -42,7 +43,8 @@ export function Sidebar() {
           </Link>
         </nav>
       </div>
-      <div className="p-4 mt-auto">
+      <div className="p-4 mt-auto space-y-2">
+        <ThemeToggle />
         <form action={logout}>
           <button
             type="submit"
