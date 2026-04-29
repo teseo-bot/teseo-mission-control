@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
   try {
     const TELEGRAM_BOT_TOKEN = process.env.WATCHDOG_TELEGRAM_TOKEN
