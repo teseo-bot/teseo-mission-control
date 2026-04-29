@@ -11,6 +11,7 @@ import { useTenantDetailStore } from "@/hooks/useTenantDetailStore";
 import { OperationTab } from "./components/OperationTab";
 import { CustomerDataTab } from "./components/CustomerDataTab";
 import { BrandingTab } from "./components/BrandingTab";
+import { BehaviorTab } from "./components/BehaviorTab";
 import { PromptsTab } from "./components/PromptsTab";
 import { AccessTab } from "./components/AccessTab";
 import { VaultTab } from "./components/VaultTab";
@@ -104,10 +105,11 @@ export default function TenantDetailPage() {
       </div>
 
       <Tabs defaultValue="core" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-6">
+        <TabsList className="mb-6 grid w-full grid-cols-7">
           <TabsTrigger value="core">Operación</TabsTrigger>
           <TabsTrigger value="customer">Cliente</TabsTrigger>
           <TabsTrigger value="branding">Branding & UI</TabsTrigger>
+          <TabsTrigger value="behavior">Comportamiento</TabsTrigger>
           <TabsTrigger value="prompts">Prompts & IA</TabsTrigger>
           <TabsTrigger value="access">Accesos & Roles</TabsTrigger>
           <TabsTrigger value="vault">API Keys</TabsTrigger>
@@ -123,6 +125,10 @@ export default function TenantDetailPage() {
 
         <TabsContent value="branding" className="mt-0">
           <BrandingTab tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="behavior" className="mt-0">
+          <BehaviorTab />
         </TabsContent>
 
         <TabsContent value="prompts" className="mt-0">

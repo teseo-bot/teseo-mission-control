@@ -62,6 +62,15 @@ export const promptVersionSchema = z.object({
   })),
 });
 
+// ─── Humanizer (Comportamiento) ───
+export const humanizerSchema = z.object({
+  enabled: z.boolean(),
+  wpm: z.number().min(10, "Mínimo 10 WPM").max(1000, "Máximo 1000 WPM"),
+  chunkSize: z.number().min(1, "Mínimo 1 caracter").max(500, "Máximo 500 caracteres"),
+  minDelay: z.number().min(0, "Mínimo 0ms").max(10000, "Máximo 10000ms"),
+  maxDelay: z.number().min(0, "Mínimo 0ms").max(10000, "Máximo 10000ms"),
+});
+
 // ─── Accesos ───
 export const inviteUserSchema = z.object({
   email: z.string().email(),
