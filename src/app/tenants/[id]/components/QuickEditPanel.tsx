@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +13,6 @@ import { useTenantDetailStore } from "@/hooks/useTenantDetailStore";
 
 export function QuickEditPanel({ tenantId }: { tenantId: string }) {
   const { config, setConfig, saving, setSaving } = useTenantDetailStore();
-  const supabase = createClient();
   
   const [prompts, setPrompts] = useState({
     sdr: config?.semantic_prompts?.sdr || "",
@@ -29,18 +27,29 @@ export function QuickEditPanel({ tenantId }: { tenantId: string }) {
   const handleSave = async () => {
     if (!config) return;
     setSaving("prompts_quick", true);
-    const { error } = await supabase
-      .from("tenant_configs")
-      .update({ semantic_prompts: prompts })
-      .eq("tenant_id", tenantId);
+    
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}/config`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ semantic_prompts: prompts }),
+      });
 
-    if (error) {
-      toast.error("Error al guardar: " + error.message);
-    } else {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al guardar");
+      }
+
       setConfig({ ...config, semantic_prompts: prompts });
       toast.success("Prompts inyectados con éxito.");
+    } catch (error: any) {
+      toast.error("Error al guardar: " + error.message);
+    } finally {
+      setSaving("prompts_quick", false);
     }
-    setSaving("prompts_quick", false);
   };
 
   return (
