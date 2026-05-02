@@ -9,8 +9,11 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.MISSION_CONTROL_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MISSION_CONTROL_SUPABASE_SERVICE_KEY;
+    
+    console.log("Supabase URL:", supabaseUrl ? "Exists" : "Missing", process.env.NEXT_PUBLIC_SUPABASE_URL ? "N_P exists" : "N_P missing");
+    console.log("Supabase Key:", supabaseServiceKey ? "Exists" : "Missing");
     
     if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json(
