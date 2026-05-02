@@ -52,6 +52,7 @@ export interface TenantDetailState {
       sdr: string; 
       gatekeeper: string; 
       rag_l1: string;
+      chitchat?: string;
       sdr_llm_tier?: string;
       gatekeeper_llm_tier?: string;
       rag_llm_tier?: string;

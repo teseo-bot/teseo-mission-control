@@ -20,6 +20,7 @@ export function QuickEditPanel({ tenantId }: { tenantId: string }) {
     sdr: config?.semantic_prompts?.sdr || "",
     gatekeeper: config?.semantic_prompts?.gatekeeper || "",
     rag_l1: config?.semantic_prompts?.rag_l1 || "",
+    chitchat: config?.semantic_prompts?.chitchat || "",
     sdr_llm_tier: config?.semantic_prompts?.sdr_llm_tier || "gemini-flash",
     gatekeeper_llm_tier: config?.semantic_prompts?.gatekeeper_llm_tier || "gemini-flash",
     rag_llm_tier: config?.semantic_prompts?.rag_llm_tier || "gemini-flash"
@@ -51,12 +52,25 @@ export function QuickEditPanel({ tenantId }: { tenantId: string }) {
       
       <CardContent className="flex-1 flex flex-col min-h-0">
         <Tabs defaultValue="sdr" className="flex-1 flex flex-col h-full">
-          <TabsList className="grid w-full grid-cols-3 shrink-0">
-            <TabsTrigger value="sdr">SDR (Negociación)</TabsTrigger>
-            <TabsTrigger value="gatekeeper">Gatekeeper (Clasificación)</TabsTrigger>
-            <TabsTrigger value="rag_l1">RAG L1 (Restricciones)</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 shrink-0">
+            <TabsTrigger value="chitchat">Chit-Chat</TabsTrigger>
+            <TabsTrigger value="sdr">SDR</TabsTrigger>
+            <TabsTrigger value="gatekeeper">Gatekeeper</TabsTrigger>
+            <TabsTrigger value="rag_l1">RAG L1</TabsTrigger>
           </TabsList>
           
+          <TabsContent value="chitchat" className="flex-1 flex flex-col mt-4 min-h-0">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-muted-foreground">Recepción y Empatía Humana</Label>
+            </div>
+            <Textarea 
+              className="flex-1 font-mono text-sm resize-none bg-muted/30 focus-visible:ring-primary/50"
+              placeholder="Ej: Eres la recepcionista. Saluda amablemente, no des información técnica, solo averigua en qué puedes ayudar de manera coloquial..."
+              value={prompts.chitchat}
+              onChange={(e) => setPrompts({ ...prompts, chitchat: e.target.value })}
+            />
+          </TabsContent>
+
           <TabsContent value="sdr" className="flex-1 flex flex-col mt-4 min-h-0">
             <div className="flex items-center justify-between mb-2">
               <Label className="text-muted-foreground">Contexto del Vendedor Digital (SDR)</Label>
