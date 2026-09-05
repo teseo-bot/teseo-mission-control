@@ -28,6 +28,10 @@
 // La 016 (ADR-220 D-220.4) añade `tenant_projects`; aplicada el 2026-08-21. La 017 (ADR-221
 // D-221.1) añade `tenant_project_bindings`: el vínculo remitente → proyecto, que es lo que
 // permite que UN número atienda N conferencias. SIN APLICAR aún.
+// La 018 añade a `tenants` las columnas del Kill Switch (`billing_status`, `suspension_reason`,
+// `suspension_message`): la pestaña las escribía desde el principio y daba 42703 en cada
+// guardado, porque quien las definía era `migrations/002`+`004`, del directorio que no corre.
+// SIN APLICAR aún.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -53,6 +57,7 @@ export const MIGRATION_FILES = [
   '015_tenant_agents.sql',
   '016_tenant_projects.sql',
   '017_tenant_project_bindings.sql',
+  '018_tenant_suspension.sql',
 ] as const;
 
 // Códigos de error Postgres que indican "esto ya existía" (re-run seguro).
