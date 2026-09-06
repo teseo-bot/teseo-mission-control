@@ -3,6 +3,7 @@
 import { pool } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { OperationFormValues, ClientFormValues, SuspensionFormValues } from "./schemas";
+import { derivarEstadoDeServicio, planSuspension } from "@/lib/tenants/suspension";
 
 // Esta consulta pedía CINCO columnas que no existen en el plano de control:
 // telegram_bot_token, telegram_whitelisted_group_ids, suspension_status,
@@ -17,7 +18,9 @@ import { OperationFormValues, ClientFormValues, SuspensionFormValues } from "./s
 export async function getTenantOperationSettings(tenantId: string) {
   try {
     const { rows } = await pool.query(
-      `SELECT name, domain, orchestrator_url, status FROM tenants WHERE id = $1`,
+      `SELECT name, domain, orchestrator_url, status, billing_status,
+              suspension_reason, suspension_message
+         FROM tenants WHERE id = $1`,
       [tenantId]
     );
     if (rows.length === 0) {
@@ -30,9 +33,14 @@ export async function getTenantOperationSettings(tenantId: string) {
       orchestratorUrl: tenant.orchestrator_url || "",
       telegramWhitelistedGroupIds: "",
       status: tenant.status === 'active',
-      suspensionStatus: "active" as const,
-      suspensionReason: "",
-      suspensionMessage: "",
+      // El select del Kill Switch tiene CUATRO opciones y detrás hay DOS columnas, porque son
+      // dos preguntas distintas: `status` dice si el servicio está cortado y `billing_status`
+      // en qué punto de cobranza está. El corte gana al pintarlo — un tenant suspendido se lee
+      // «Suspensión Total» aunque su cobranza estuviera al día, que es lo que el operador
+      // necesita ver primero.
+      suspensionStatus: derivarEstadoDeServicio(tenant.status, tenant.billing_status),
+      suspensionReason: tenant.suspension_reason || "",
+      suspensionMessage: tenant.suspension_message || "",
     };
   } catch (error: any) {
     // `null` aquí significa «no se pudo leer», y arriba se dibuja como formulario
@@ -76,13 +84,46 @@ export async function updateTenantOperationSettings(
   }
 }
 
+// El Kill Switch escribía `suspension_status`, `suspension_reason` y `suspension_message`, y
+// ninguna de las tres existía: 42703 en cada guardado, medido contra el plano de control el
+// 2026-09-02. Quien las definía era `migrations/002`+`004`, del directorio que no corre nadie.
+// Las dos descriptivas las crea ahora `migrations-gcp/018`; la tercera se traduce a las columnas
+// que ya mandaban.
+//
+// ⛔ EL CORTE NO TIENE COLUMNA PROPIA, Y ESO ES LA CORRECCIÓN. `tenants.status` ya existía, ya
+// tenía su CHECK y ya lo escribe el toggle de la pestaña «Operación». Con una `suspension_status`
+// aparte, las dos pestañas del MISMO formulario dirían «suspendido» en columnas distintas sin
+// nada que defina cuál gana, y el orquestador tendría que desempatarlas con una regla no
+// escrita. Aquí las dos escriben `status`, así que no pueden discrepar.
+//
+// `delayed` y `unpaid` NO cortan: son avisos de cobranza y el servicio sigue atendiendo.
 export async function updateTenantSuspension(tenantId: string, values: SuspensionFormValues) {
   try {
+    const { cortar, billing } = planSuspension(values.suspensionStatus);
+
     await pool.query(
-      `UPDATE tenants 
-       SET suspension_status = $1, suspension_reason = $2, suspension_message = $3
-       WHERE id = $4`,
-      [values.suspensionStatus, values.suspensionReason || null, values.suspensionMessage || null, tenantId]
+      // ⚠️ `status` sólo se mueve entre 'active' y 'suspended'. Un tenant en 'onboarding' que se
+      // reactive desde aquí seguiría en 'onboarding': el Kill Switch corta y descorta, no
+      // adelanta el ciclo de vida del alta. Sin este CASE, abrir la pestaña y darle a Aplicar
+      // graduaría de golpe a producción un tenant a medio aprovisionar.
+      `UPDATE tenants
+          SET status = CASE
+                         WHEN $1::boolean THEN 'suspended'
+                         WHEN status = 'suspended' THEN 'active'
+                         ELSE status
+                       END,
+              billing_status     = COALESCE($2, billing_status),
+              suspension_reason  = $3,
+              suspension_message = $4,
+              updated_at         = now()
+        WHERE id = $5`,
+      [
+        cortar,
+        billing,
+        values.suspensionReason || null,
+        values.suspensionMessage || null,
+        tenantId,
+      ]
     );
     revalidatePath(`/tenants/${tenantId}`);
     return { success: true };

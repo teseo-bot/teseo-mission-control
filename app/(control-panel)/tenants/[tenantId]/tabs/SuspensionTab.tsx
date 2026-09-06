@@ -68,7 +68,8 @@ export function SuspensionTab({ tenantId, initialData }: SuspensionTabProps) {
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  Cambiar el estado puede restringir el acceso a la plataforma.
+                  Sólo «Suspensión Total» corta el servicio: el agente deja de atender y contesta
+                  el mensaje de abajo. Las dos alertas son avisos de cobranza y no interrumpen nada.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -104,7 +105,10 @@ export function SuspensionTab({ tenantId, initialData }: SuspensionTabProps) {
                         {...field} 
                       />
                     </FormControl>
-                    <FormDescription>Este mensaje se mostrará al usuario en un modal al iniciar sesión.</FormDescription>
+                    <FormDescription>
+                      Con «Suspensión Total», esto es lo que el agente le responde a quien escriba
+                      por WhatsApp, Telegram o correo. Déjalo vacío y el agente no contestará nada.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
